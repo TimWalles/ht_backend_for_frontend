@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 from typing import List, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -63,6 +64,7 @@ class TrackingBase(SQLModel):
 
 class Tracking(TrackingBase, table=True):
     id: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4, primary_key=True, nullable=False)
+    added_at: datetime = Field(default=datetime.now(UTC), nullable=False)
     user_id: Optional[uuid.UUID] = Field(primary_key=True, nullable=False)
     activity: Activity = Relationship(back_populates="tracking")
 
@@ -74,6 +76,7 @@ class TrackingCreate(TrackingBase):
 class TrackingRead(TrackingBase):
     id: uuid.UUID
     user_id: uuid.UUID
+    added_at: datetime
 
 
 class TrackingUpdate(SQLModel):

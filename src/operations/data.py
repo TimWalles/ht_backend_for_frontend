@@ -132,6 +132,22 @@ async def get_data_by_id(
         )
 
 
+async def get_user_activities(
+    session: Session,
+    user_id: str,
+) -> List[Activity]:
+    try:
+        statement = select(Tracking).where(Tracking.user_id == user_id)
+        data = session.exec(statement).fetchall()
+        data = [TrackingWithActivityRead.model_validate(i) for i in data]
+        return [i.activity for i in data]
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to get user activities: {str(e)}",
+        )
+
+
 async def get_total_user_score(
     data_session: Session,
     user_session: Session,
@@ -173,16 +189,16 @@ async def get_total_scores(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Users not found",
             )
-        return TotalScoreResponse(
-            users=[
-                await get_total_user_score(
-                    data_session=data_session,
-                    user_session=user_session,
-                    user_id=i.id,
-                )
-                for i in users
-            ]
-        )
+        total_scores = [
+            await get_total_user_score(
+                data_session=data_session,
+                user_session=user_session,
+                user_id=i.id,
+            )
+            for i in users
+        ]
+        total_scores.sort(key=lambda x: x.total_score, reverse=True)
+        return TotalScoreResponse(users=total_scores)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

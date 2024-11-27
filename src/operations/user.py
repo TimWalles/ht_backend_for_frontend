@@ -30,7 +30,7 @@ async def get_user(
 ) -> UserInDB | None:
     result = session.exec(select(User).where(User.username == username))
     user_data = result.first()
-    if user_data and user_data.username.lower() == username:
+    if user_data and user_data.username.lower() == username.lower():
         return UserInDB.model_validate(user_data)
     return None
 

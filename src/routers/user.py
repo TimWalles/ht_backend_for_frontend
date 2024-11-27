@@ -1,12 +1,17 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_pagination import Page, Params, paginate
+from fastapi_pagination.utils import disable_installed_extensions_check
 from sqlalchemy import exc
 from sqlmodel import Session
 
 from src.dependencies import get_user_db_session
+from src.operations.auth import get_current_active_user
 from src.operations.user import create_new_user, get_users
-from src.services.user_database.tables import UserCreate, UserRead
+from src.services.user_database.tables import User, UserCreate, UserRead
+
+disable_installed_extensions_check()
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -34,16 +39,19 @@ async def create_user(
 
 @router.get(
     "/all/",
-    response_model=List[UserRead],
+    response_model=Page[UserRead],
     summary="Get a user all users",
 )
 async def get_user(
     session: Session = Depends(get_user_db_session),
+    current_user: User = Depends(get_current_active_user),
+    params: Params = Depends(),
 ):
     try:
-        return await get_users(
+        response = await get_users(
             session=session,
         )
+        return paginate(response)
     except exc.IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

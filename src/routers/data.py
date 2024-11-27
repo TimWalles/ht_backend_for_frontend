@@ -2,6 +2,8 @@ import uuid
 from typing import Annotated, List, Union
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_pagination import Page, Params, paginate
+from fastapi_pagination.utils import disable_installed_extensions_check
 from sqlmodel import Session
 
 from src.dependencies import get_data_db_session, get_user_db_session
@@ -14,6 +16,7 @@ from src.operations.data import (
     get_data,
     get_total_scores,
     get_total_user_score,
+    get_user_activities,
     update_data,
 )
 from src.schemas.DeleteResponse import DeleteResponse
@@ -31,13 +34,21 @@ from src.services.data_database.tables import (
 )
 from src.services.user_database.tables import User
 
+disable_installed_extensions_check()
+
 router = APIRouter(prefix="/data", tags=["data"])
 
 
 # region get routes
 @router.get(
     "/{table}/all",
-    response_model=List[Union[RewardRead, ActivityRead, TrackingWithActivityRead]],
+    response_model=Page[
+        Union[
+            RewardRead,
+            ActivityRead,
+            TrackingWithActivityRead,
+        ]
+    ],
     status_code=status.HTTP_200_OK,
     summary="Get all rewards",
 )
@@ -47,10 +58,11 @@ async def get_table_data(
     current_user: User = Depends(get_current_active_user),
 ):
     try:
-        return await get_data(
+        response = await get_data(
             session=session,
             table=table,
         )
+        return paginate(response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -79,7 +91,7 @@ async def get_user_score(
 
 @router.get(
     "/total_score/get",
-    response_model=TotalScoreResponse,
+    response_model=Page[TotalScoreResponse],
     status_code=status.HTTP_200_OK,
     summary="Get total score of all users",
 )
@@ -87,12 +99,36 @@ async def get_total_score(
     data_session: Session = Depends(get_data_db_session),
     user_session: Session = Depends(get_user_db_session),
     current_user: User = Depends(get_current_active_user),
+    params: Params = Depends(),
 ):
     try:
-        return await get_total_scores(
+        response = await get_total_scores(
             data_session=data_session,
             user_session=user_session,
         )
+        return paginate(response)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get(
+    "/tracking/{user_id}/get",
+    response_model=Page[ActivityRead],
+    status_code=status.HTTP_200_OK,
+    summary="Get all tracking of user",
+)
+async def get_user_tracking(
+    user_id: uuid.UUID,
+    session: Session = Depends(get_data_db_session),
+    params: Params = Depends(),
+    current_user: User = Depends(get_current_active_user),
+):
+    try:
+        response = await get_user_activities(
+            session=session,
+            user_id=user_id,
+        )
+        return paginate(response)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi_pagination import add_pagination
 
 from src.routers import auth, data, user
 from src.services.data_database.engine import init_db
@@ -14,6 +15,7 @@ async def lifespan(app: FastAPI):
 
 # region app
 app = FastAPI(lifespan=lifespan)
+add_pagination(app)
 
 
 app.include_router(auth.router)
