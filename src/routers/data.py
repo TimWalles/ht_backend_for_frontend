@@ -17,8 +17,10 @@ from src.operations.data import (
     get_total_scores,
     get_total_user_score,
     get_user_activities,
+    get_user_daily_scores,
     update_data,
 )
+from src.schemas.AggregatedScores import AggregatedScores
 from src.schemas.DeleteResponse import DeleteResponse
 from src.schemas.TotalScoreResponse import TotalScoreResponse, TotalUserScoreResponse
 from src.services.data_database.tables import (
@@ -129,6 +131,28 @@ async def get_user_tracking(
             user_id=user_id,
         )
         return paginate(response)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get(
+    "/tracking/{user_id}/aggregate",
+    response_model=AggregatedScores,
+    status_code=status.HTTP_200_OK,
+    summary="Get all tracking of user",
+)
+async def get_daily_scores(
+    user_id: uuid.UUID,
+    data_session: Session = Depends(get_data_db_session),
+    user_session: Session = Depends(get_user_db_session),
+    current_user: User = Depends(get_current_active_user),
+):
+    try:
+        return await get_user_daily_scores(
+            data_session=data_session,
+            user_session=user_session,
+            user_id=user_id,
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

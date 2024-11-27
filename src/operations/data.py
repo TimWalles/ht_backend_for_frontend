@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from src.enums.Tables import Tables
+from src.schemas.AggregatedScores import AggregatedScores, DailyScore
 from src.schemas.DeleteResponse import DeleteResponse
 from src.schemas.TotalScoreResponse import TotalScoreResponse, TotalUserScoreResponse
 from src.services.data_database.tables import (
@@ -20,7 +21,7 @@ from src.services.data_database.tables import (
     TrackingUpdate,
     TrackingWithActivityRead,
 )
-from src.utils import str_to_uuid, uuid_to_str
+from src.utils import datetime_to_date, str_to_uuid, uuid_to_str
 
 from .user import get_users
 
@@ -175,6 +176,49 @@ async def get_total_user_score(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to get total score: {str(e)}",
+        )
+
+
+async def get_user_daily_scores(
+    data_session: Session,
+    user_session: Session,
+    user_id: uuid.UUID,
+) -> AggregatedScores:
+    try:
+        users = await get_users(session=user_session)
+        if user_id not in [i.id for i in users]:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+        for i in users:
+            if i.id == user_id:
+                user = i
+                break
+        statement = select(Tracking).where(Tracking.user_id == user_id)
+        data = data_session.exec(statement).fetchall()
+        data = [TrackingWithActivityRead.model_validate(i) for i in data]
+        data.sort(key=lambda x: x.added_at, reverse=False)
+        daily_scores = {}
+        cumulative_score = 0
+        for i in data:
+            date = datetime_to_date(i.added_at)
+            if date not in daily_scores:
+                daily_scores[date] = 0
+            daily_scores[date] += i.activity.points
+        for i in daily_scores:
+            cumulative_score += daily_scores[i]
+            daily_scores[i] = DailyScore(date=i, score=daily_scores[i], cumulative_score=cumulative_score)
+        daily_scores = list(daily_scores.values())
+        return AggregatedScores(
+            user_id=user_id,
+            user_name=user.username,
+            scores=daily_scores,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to get daily scores: {str(e)}",
         )
 
 
