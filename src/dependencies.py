@@ -14,7 +14,7 @@ async def get_user_db_session(user_database_engine: Annotated[UserDatabaseEngine
 
 
 async def get_data_db_session(database_engine: Annotated[DataDatabaseEngine, Depends(DataDatabaseEngine)]):
-    with Session(database_engine) as session:
+    with Session(database_engine.engine) as session:
         yield session
 
 

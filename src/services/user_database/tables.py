@@ -25,6 +25,7 @@ class UserCreate(UserBase):
 class UserInDB(UserBase):
     hashed_password: str
     deactivated: bool
+    id: uuid.UUID
 
 
 class UserRead(UserBase):

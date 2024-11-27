@@ -7,7 +7,6 @@ class Settings(BaseSettings):
     database_domain: str
     database_user: str
     database_password: str
-    database: str
     users_database_name: str
     data_database_name: str
     secret_key: str
