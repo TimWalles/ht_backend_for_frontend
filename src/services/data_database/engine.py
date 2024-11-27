@@ -11,7 +11,7 @@ from . import tables
 async def init_db(settings: Annotated[Settings, Depends(get_settings)]) -> None:
     engine = create_engine(
         f"mysql+pymysql://{settings.database_user}:{settings.database_password}@{settings.database_domain}/{settings.data_database_name}",
-        echo=True,
+        echo=False,
     )
     SQLModel.metadata.create_all(engine, checkfirst=True)
 
@@ -22,6 +22,6 @@ class DatabaseEngine:
             f"mysql+pymysql://{settings.database_user}:{settings.database_password}@{settings.database_domain}/{settings.data_database_name}",
             pool_size=20,
             max_overflow=10,
-            echo=True,
+            echo=False,
             pool_recycle=3600,
         )

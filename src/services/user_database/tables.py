@@ -9,6 +9,10 @@ from src.enums.Roles import Roles
 
 class UserBase(SQLModel, registry=registry()):
     username: str = Field(index=True, unique=True)
+    user_avatar: Optional[str] = Field(default=None)
+    user_country: Optional[str] = Field(default=None)
+    team_name: Optional[str] = Field(default=None)
+    job_name: Optional[str] = Field(default=None)
 
 
 class User(UserBase, table=True):
@@ -31,6 +35,10 @@ class UserInDB(UserBase):
 class UserRead(UserBase):
     id: uuid.UUID
     username: str
+    user_avatar: Optional[str]
+    user_country: Optional[str]
+    team_name: Optional[str]
+    job_name: Optional[str]
 
 
 class UserUpdate(UserBase):
@@ -38,3 +46,6 @@ class UserUpdate(UserBase):
     role: Roles
     deactivated: bool
     new_password: str
+    user_avatar: Optional[str]
+    user_country: Optional[str]
+    team_name: Optional[str]

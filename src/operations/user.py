@@ -1,3 +1,5 @@
+from typing import List
+
 import bcrypt
 from sqlmodel import Session, select
 
@@ -28,6 +30,14 @@ async def get_user(
 ) -> UserInDB | None:
     result = session.exec(select(User).where(User.username == username))
     user_data = result.first()
-    if user_data and user_data.username == username:
+    if user_data and user_data.username.lower() == username:
         return UserInDB.model_validate(user_data)
     return None
+
+
+async def get_users(
+    session: Session,
+) -> List[UserRead] | None:
+    statement = select(User)
+    result = session.exec(statement)
+    return [UserRead.model_validate(user) for user in result]

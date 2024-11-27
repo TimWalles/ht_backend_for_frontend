@@ -12,7 +12,6 @@ class RewardBase(SQLModel):
 
 class Reward(RewardBase, table=True):
     id: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4, primary_key=True, nullable=False)
-    activities: List["Activity"] = Relationship(back_populates="reward")
 
 
 class RewardCreate(RewardBase):
@@ -23,8 +22,9 @@ class RewardRead(RewardBase):
     id: uuid.UUID
 
 
-class RewardUpdate(RewardBase):
-    pass
+class RewardUpdate(SQLModel):
+    name: Optional[str] = None
+    points: Optional[int] = None
 
 
 # endregion
@@ -33,13 +33,12 @@ class RewardUpdate(RewardBase):
 # region Activity
 class ActivityBase(SQLModel):
     name: str = Field(nullable=False)
-    reward_id: uuid.UUID = Field(foreign_key="reward.id", nullable=False)
+    points: int = Field(nullable=False)
 
 
 class Activity(ActivityBase, table=True):
     id: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4, primary_key=True, nullable=False)
-    user_id: Optional[uuid.UUID] = Field(nullable=False)
-    reward: Reward = Relationship(back_populates="activities")
+    tracking: List["Tracking"] = Relationship(back_populates="activity", cascade_delete=True)
 
 
 class ActivityCreate(ActivityBase):
@@ -50,9 +49,39 @@ class ActivityRead(ActivityBase):
     id: uuid.UUID
 
 
-class ActivityUpdate(ActivityBase):
+class ActivityUpdate(SQLModel):
+    name: Optional[str] = None
+    points: Optional[int] = None
+
+
+# endregion
+
+
+class TrackingBase(SQLModel):
+    activity_id: uuid.UUID = Field(nullable=False, foreign_key="activity.id", ondelete="CASCADE")
+
+
+class Tracking(TrackingBase, table=True):
+    id: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4, primary_key=True, nullable=False)
+    user_id: Optional[uuid.UUID] = Field(primary_key=True, nullable=False)
+    activity: Activity = Relationship(back_populates="tracking")
+
+
+class TrackingCreate(TrackingBase):
     pass
 
 
-class ActivityReadWithReward(ActivityRead):
-    reward: Optional[RewardRead] = None
+class TrackingRead(TrackingBase):
+    id: uuid.UUID
+    user_id: uuid.UUID
+
+
+class TrackingUpdate(SQLModel):
+    activity_id: Optional[uuid.UUID] = None
+
+
+class TrackingWithActivityRead(TrackingRead):
+    activity: ActivityRead
+
+
+# endregion
